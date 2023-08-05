@@ -1,0 +1,71 @@
+{% extends 'base.html' %} {% block content %}
+
+<div class="container_box">
+  <div class="search_box">
+    <div class="row mx-auto">
+      <div class="col-lg-6 col-md-6">
+        <input
+          type="text"
+          class="form-control"
+          id="search"
+          placeholder="Search for places...."
+        />
+      </div>
+      <div class="col-lg-3 col-md-3">
+        <button id="here" type="button" class="btn btn-outline-dark">
+          Search
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="map">{{ places_list|json_script:"all_places" }}</div>
+</div>
+
+<script>
+  var map = L.map("map").setView([17.3366609, 76.8392742], 9);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "© OpenStreetMap",
+  }).addTo(map);
+
+  var place_list = [];
+
+  function AddMarkers(places) {
+    places.forEach((element) => {
+      let place = L.marker([
+        element.location.latitude,
+        element.location.longitude,
+      ]).addTo(map);
+      place.bindPopup(
+        `<h6>Hello ${element.name}</h6><p>Longitude: ${element.location.longitude}, Latitude: ${element.location.latitude}</p>`
+      );
+      place_list.push(place);
+    });
+  }
+
+  function RemoveMarker() {
+    place_list.forEach((place) => map.removeLayer(place));
+    place_list = [];
+  }
+
+  let all_places = JSON.parse(
+    document.getElementById("all_places").textContent
+  );
+  AddMarkers(all_places);
+
+  $("#here").click(function (e) {
+    e.preventDefault();
+    let search = document.getElementById("search").value;
+    $.ajax({
+      type: "GET",
+      url: "{% url 'place-search' %}",
+      data: { search: search },
+      success: function (res) {
+        RemoveMarker();
+        AddMarkers(res);
+      },
+    });
+  });
+</script>
+
+{% endblock %}
